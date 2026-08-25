@@ -1,68 +1,79 @@
-from .models import StudentProfile, Scheme, EligibilityResult
+from __future__ import annotations
+
+from typing import Any
+
+from .models import EligibilityResult, Scheme, StudentProfile
+
+
+def _compare(actual: Any, operator: str, expected: Any) -> bool:
+    if operator == "==":
+        return actual == expected
+    if operator == "!=":
+        return actual != expected
+    if operator == "<":
+        return actual < expected
+    if operator == "<=":
+        return actual <= expected
+    if operator == ">":
+        return actual > expected
+    if operator == ">=":
+        return actual >= expected
+    if operator == "in":
+        return actual in expected
+    raise ValueError(f"Unsupported eligibility operator: {operator}")
 
 
 def evaluate(profile: StudentProfile, scheme: Scheme) -> EligibilityResult:
-    reasons, missing = [], []
-    checks, passed = 0, 0
+    reasons: list[str] = []
+    missing: list[str] = []
+    checks = len(scheme.eligibility_rules)
+    passed = 0
 
-    if scheme.state:
-        checks += 1
-        if profile.state.strip().lower() == scheme.state.strip().lower():
-            passed += 1; reasons.append("State requirement matches.")
-        else:
-            reasons.append(f"State requirement is {scheme.state}.")
+    if not scheme.eligibility_rules:
+        return EligibilityResult(
+            scheme=scheme,
+            status="UNKNOWN",
+            score=0.0,
+            reasons=["No machine-checkable eligibility rules are loaded for this scheme."],
+            missing_information=[],
+        )
 
-    if scheme.education_levels:
-        checks += 1
-        if profile.education_level.upper() in {x.upper() for x in scheme.education_levels}:
-            passed += 1; reasons.append("Education level matches.")
-        else:
-            reasons.append("Education level does not match the stated requirement.")
-
-    if scheme.min_age is not None or scheme.max_age is not None:
-        checks += 1
-        ok = (scheme.min_age is None or profile.age >= scheme.min_age) and (scheme.max_age is None or profile.age <= scheme.max_age)
+    for rule in scheme.eligibility_rules:
+        actual = getattr(profile, rule.field, None)
+        if actual is None:
+            missing.append(rule.field)
+            reasons.append(f"Need {rule.field} to evaluate: {rule.provenance.reference}.")
+            continue
+        try:
+            ok = _compare(actual, rule.operator, rule.value)
+        except (TypeError, ValueError):
+            ok = False
+            reasons.append(f"Could not safely evaluate {rule.field}; human review is required.")
         if ok:
-            passed += 1; reasons.append("Age requirement matches.")
+            passed += 1
+            reasons.append(f"{rule.field} satisfies the documented rule.")
         else:
-            reasons.append("Age is outside the stated range.")
-
-    if scheme.max_income is not None:
-        checks += 1
-        if profile.annual_family_income is None:
-            missing.append("annual_family_income")
-        elif profile.annual_family_income <= scheme.max_income:
-            passed += 1; reasons.append("Family income is within the stated limit.")
-        else:
-            reasons.append("Family income exceeds the stated limit.")
-
-    if scheme.categories:
-        checks += 1
-        if not profile.category:
-            missing.append("category")
-        elif profile.category.upper() in {x.upper() for x in scheme.categories}:
-            passed += 1; reasons.append("Category requirement matches.")
-        else:
-            reasons.append("Category is not listed in the scheme criteria.")
-
-    if scheme.disability_required is not None:
-        checks += 1
-        if profile.disability == scheme.disability_required:
-            passed += 1; reasons.append("Disability criterion matches.")
-        else:
-            reasons.append("Disability criterion does not match.")
+            reasons.append(f"{rule.field} does not satisfy the documented rule.")
 
     score = round(passed / checks, 2) if checks else 0.0
-    if missing:
+    if any("does not satisfy" in r for r in reasons):
+        status = "NOT_ELIGIBLE"
+    elif missing or scheme.manual_review_required:
         status = "UNKNOWN"
+        if scheme.manual_review_required and scheme.manual_review_reason:
+            reasons.append(scheme.manual_review_reason)
     elif score == 1:
         status = "LIKELY_ELIGIBLE"
-    elif score >= 0.5:
-        status = "POSSIBLY_ELIGIBLE"
     else:
-        status = "NOT_ELIGIBLE"
+        status = "POSSIBLY_ELIGIBLE"
 
-    return EligibilityResult(scheme=scheme, status=status, score=score, reasons=reasons, missing_information=missing)
+    return EligibilityResult(
+        scheme=scheme,
+        status=status,
+        score=score,
+        reasons=reasons,
+        missing_information=sorted(set(missing)),
+    )
 
 
 def rank(profile: StudentProfile, schemes: list[Scheme]) -> list[EligibilityResult]:
