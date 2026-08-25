@@ -1,0 +1,14 @@
+{"id":"ml-en-01","language":"en","query":"What is the family income limit for PM-USP Central Sector Scholarship?","expected_scheme_id":"pm-usp-csss-2025-26","human_review_status":"pending"}
+{"id":"ml-en-02","language":"en","query":"Does PM-USP require a regular course and Class XII percentile?","expected_scheme_id":"pm-usp-csss-2025-26","human_review_status":"pending"}
+{"id":"ml-en-03","language":"en","query":"What is the income threshold for PM Vidyalaxmi interest subvention?","expected_scheme_id":"pm-vidyalaxmi","human_review_status":"pending"}
+{"id":"ml-en-04","language":"en","query":"Is admission in a Quality Higher Educational Institution required for PM Vidyalaxmi?","expected_scheme_id":"pm-vidyalaxmi","human_review_status":"pending"}
+{"id":"ml-kn-01","language":"kn","query":"PM-USP ಕೇಂದ್ರ ವಲಯ ವಿದ್ಯಾರ್ಥಿವೇತನಕ್ಕೆ ಕುಟುಂಬದ ಆದಾಯ ಮಿತಿ ಎಷ್ಟು?","expected_scheme_id":"pm-usp-csss-2025-26","human_review_status":"pending"}
+{"id":"ml-kn-02","language":"kn","query":"PM-USP ವಿದ್ಯಾರ್ಥಿವೇತನಕ್ಕೆ 12ನೇ ತರಗತಿಯ ಶೇಕಡಾವಾರು ಮಾನದಂಡ ಏನು?","expected_scheme_id":"pm-usp-csss-2025-26","human_review_status":"pending"}
+{"id":"ml-kn-03","language":"kn","query":"PM-USP ಗೆ ನಿಯಮಿತ ಕೋರ್ಸ್‌ನಲ್ಲಿ ಓದುತ್ತಿರಬೇಕು ಎಂಬ ನಿಯಮ ಇದೆಯೇ?","expected_scheme_id":"pm-usp-csss-2025-26","human_review_status":"pending"}
+{"id":"ml-kn-04","language":"kn","query":"PM Vidyalaxmi ಯೋಜನೆಯಲ್ಲಿ ಎಂಟು ಲಕ್ಷ ಆದಾಯದ ವಿದ್ಯಾರ್ಥಿಗೆ ಬಡ್ಡಿ ಸಹಾಯ ಸಿಗುತ್ತದೆಯೇ?","expected_scheme_id":"pm-vidyalaxmi","human_review_status":"pending"}
+{"id":"ml-kn-05","language":"kn","query":"PM Vidyalaxmi ಗೆ ಗುಣಮಟ್ಟದ ಉನ್ನತ ಶಿಕ್ಷಣ ಸಂಸ್ಥೆಗೆ ಪ್ರವೇಶ ಅಗತ್ಯವೇ?","expected_scheme_id":"pm-vidyalaxmi","human_review_status":"pending"}
+{"id":"ml-hi-01","language":"hi","query":"PM-USP छात्रवृत्ति के लिए परिवार की आय सीमा कितनी है?","expected_scheme_id":"pm-usp-csss-2025-26","human_review_status":"pending"}
+{"id":"ml-hi-02","language":"hi","query":"PM-USP के लिए कक्षा 12 के प्रतिशत की क्या शर्त है?","expected_scheme_id":"pm-usp-csss-2025-26","human_review_status":"pending"}
+{"id":"ml-hi-03","language":"hi","query":"क्या PM-USP में नियमित पाठ्यक्रम में पढ़ना जरूरी है?","expected_scheme_id":"pm-usp-csss-2025-26","human_review_status":"pending"}
+{"id":"ml-hi-04","language":"hi","query":"PM Vidyalaxmi में आठ लाख रुपये तक की आय वाले छात्र को ब्याज सहायता मिल सकती है?","expected_scheme_id":"pm-vidyalaxmi","human_review_status":"pending"}
+{"id":"ml-hi-05","language":"hi","query":"क्या PM Vidyalaxmi के लिए गुणवत्तापूर्ण उच्च शिक्षा संस्थान में प्रवेश जरूरी है?","expected_scheme_id":"pm-vidyalaxmi","human_review_status":"pending"}
