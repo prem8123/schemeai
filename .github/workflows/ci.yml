@@ -14,6 +14,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements-dev.txt
+      - run: python scripts/check_secrets.py
       - run: pre-commit run --all-files
       - run: mypy app
       - run: pytest -q
