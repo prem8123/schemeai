@@ -1,11 +1,14 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from .models import StudentProfile, RecommendationResponse
 from .data import SCHEMES
 from .eligibility import rank
 from .rag import retrieve
 from .llm import LLMClient
 
-app = FastAPI(title="SchemeAI", version="0.2.0", description="Scholarship and education scheme eligibility assistant")
+app = FastAPI(title="SchemeAI", version="0.3.0", description="Scholarship and education scheme eligibility assistant")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
+
 DISCLAIMER = "Informational matching only. Verify current eligibility and application details with the official scheme authority before applying."
 
 @app.get("/")
@@ -33,13 +36,5 @@ def search(q: str, top_k: int = 5):
 def ask(profile: StudentProfile, question: str, language: str = "en"):
     evidence = retrieve(question, top_k=5)
     results = rank(profile, SCHEMES)
-    client = LLMClient()
-    answer = client.answer(question, [e.__dict__ for e in evidence])
-    return {
-        "question": question,
-        "language": language,
-        "answer": answer,
-        "recommendations": [r.model_dump() for r in results[:5]],
-        "evidence": [e.__dict__ for e in evidence],
-        "disclaimer": DISCLAIMER,
-    }
+    answer = LLMClient().answer(question, [e.__dict__ for e in evidence])
+    return {"question": question, "language": language, "answer": answer, "recommendations": [r.model_dump() for r in results[:5]], "evidence": [e.__dict__ for e in evidence], "disclaimer": DISCLAIMER}
