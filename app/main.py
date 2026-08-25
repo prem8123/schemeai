@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 import uuid
 from collections import Counter
@@ -15,6 +16,7 @@ from .auth import require_api_key
 from .data import SCHEMES
 from .eligibility import rank
 from .freshness import stale_schemes
+from .language import detect_supported_language
 from .llm import LLMClient
 from .logging_config import configure_logging
 from .models import RecommendationResponse, StudentProfile
@@ -27,8 +29,8 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 app = FastAPI(
     title="SchemeAI",
-    version="0.4.1",
-    description="Scholarship and education scheme eligibility assistant with provenance-first RAG",
+    version="0.5.0",
+    description="Multilingual scholarship and education scheme assistant with provenance-first RAG",
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -77,7 +79,8 @@ def health():
     return {
         "status": "ok",
         "llm_configured": LLMClient().available(),
-        "api_key_protection": bool(__import__("os").getenv("SCHEMEAI_API_KEY")),
+        "api_key_protection": bool(os.getenv("SCHEMEAI_API_KEY")),
+        "retrieval_mode": os.getenv("SCHEMEAI_RETRIEVAL_MODE", "dense"),
         "scheme_count": len(SCHEMES),
         "stale_scheme_count": len(stale_schemes()),
     }
@@ -125,9 +128,10 @@ def search(
     top_k: int = Query(default=5, ge=1, le=20),
 ):
     safe_query = clean_user_text(q, 1000)
+    detected_language = detect_supported_language(safe_query)
     evidence = retrieve(safe_query, top_k)
     logger.info("retrieval_complete", extra={"retrieval_hits": len(evidence), "top_k": top_k})
-    return {"query": safe_query, "evidence": [e.model_dump() for e in evidence]}
+    return {"query": safe_query, "detected_language": detected_language, "evidence": [e.model_dump() for e in evidence]}
 
 
 @app.post("/ask")
@@ -140,14 +144,15 @@ def ask(
     language: str = Query(default="en", pattern="^(en|kn|hi)$"),
 ):
     safe_question = clean_user_text(question)
+    detected_language = detect_supported_language(safe_question, fallback=language)
     evidence = retrieve(safe_question, top_k=5)
     results = rank(profile, SCHEMES)
     client = LLMClient()
-    answer = client.answer(safe_question, [e.model_dump() for e in evidence])
+    answer = client.answer(safe_question, [e.model_dump() for e in evidence], language=detected_language)
     logger.info("retrieval_complete", extra={"retrieval_hits": len(evidence), "top_k": 5})
     return {
         "question": safe_question,
-        "language": language,
+        "language": detected_language,
         "answer": answer,
         "recommendations": [r.model_dump() for r in results[:5]],
         "evidence": [e.model_dump() for e in evidence],
