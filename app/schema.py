@@ -25,6 +25,7 @@ class EligibilityClause(BaseModel):
     field: str | None = None
     operator: str | None = None
     value: Any | None = None
+    critical: bool = True
 
 
 class EligibilityRule(BaseModel):
@@ -33,6 +34,7 @@ class EligibilityRule(BaseModel):
     operator: Literal["==", "!=", "<", "<=", ">", ">=", "in"]
     value: Any
     provenance: Provenance
+    critical: bool = True
 
 
 class SchemeRecord(BaseModel):
