@@ -14,6 +14,7 @@ class StudentProfile(BaseModel):
     annual_family_income: Optional[float] = Field(default=None, ge=0)
     gender: Optional[str] = Field(default=None, max_length=30)
     disability: bool = False
+    disability_percentage: Optional[float] = Field(default=None, ge=0, le=100)
     class12_percentile: Optional[float] = Field(default=None, ge=0, le=100)
     regular_course: Optional[bool] = None
     is_diploma: Optional[bool] = None
