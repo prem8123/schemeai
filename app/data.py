@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from .models import Scheme
-from .schema import EligibilityRule, EligibilityClause, FreshnessStatus, Provenance
+from .schema import EligibilityClause, EligibilityRule, FreshnessStatus, Provenance
 
 ROOT = Path(__file__).resolve().parents[1]
 OFFICIAL_PATH = ROOT / "data" / "official" / "schemes.jsonl"
@@ -39,15 +39,12 @@ def _load(path: Path) -> list[Scheme]:
                 operator=c.operator,
                 value=c.value,
                 provenance=c.provenance,
+                critical=c.critical,
             )
             for c in clauses
             if c.machine_checkable and c.field and c.operator
         ]
-        provenance = list({
-            p.model_dump_json(): p
-            for c in clauses
-            for p in [c.provenance]
-        }.values())
+        provenance = list({p.model_dump_json(): p for c in clauses for p in [c.provenance]}.values())
         records.append(
             Scheme(
                 id=raw["id"],
