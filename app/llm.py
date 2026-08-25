@@ -14,13 +14,19 @@ class LLMClient:
     def available(self):
         return bool(self.api_key)
 
-    def answer(self, question: str, evidence: list[dict]) -> str:
+    def answer(self, question: str, evidence: list[dict], language: str = "en") -> str:
         if not self.available():
-            return "LLM generation is not configured. Review the retrieved evidence and eligibility results below."
+            fallbacks = {
+                "en": "LLM generation is not configured. Review the retrieved evidence and eligibility results below.",
+                "kn": "LLM ಉತ್ತರ ಸೇವೆ ಸಂರಚಿಸಲಾಗಿಲ್ಲ. ಕೆಳಗಿನ ಸಾಕ್ಷ್ಯ ಮತ್ತು ಅರ್ಹತಾ ಫಲಿತಾಂಶಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.",
+                "hi": "LLM उत्तर सेवा कॉन्फ़िगर नहीं है। नीचे दिए गए प्रमाण और पात्रता परिणाम देखें।",
+            }
+            return fallbacks.get(language, fallbacks["en"])
         context = "\n\n".join(
             f"[{i + 1}] {e['text']} (source: {e['provenance']['official_url']}, reference: {e['provenance']['reference']})"
             for i, e in enumerate(evidence)
         )
+        language_name = {"en": "English", "kn": "Kannada", "hi": "Hindi"}.get(language, "English")
         payload = {
             "model": self.model,
             "temperature": 0.1,
@@ -28,8 +34,8 @@ class LLMClient:
                 {
                     "role": "system",
                     "content": (
-                        "You are SchemeAI. Answer only from supplied evidence. If evidence is insufficient, say so. "
-                        "Never invent scholarship rules. Cite evidence as [1], [2]."
+                        f"You are SchemeAI. Answer only from supplied evidence and respond in {language_name}. "
+                        "If evidence is insufficient, say so. Never invent scholarship rules. Cite evidence as [1], [2]."
                     ),
                 },
                 {"role": "user", "content": f"Question: {question}\n\nEvidence:\n{context}"},
