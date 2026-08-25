@@ -1,0 +1,2 @@
+-r requirements.txt
+# Dense retrieval models are loaded lazily; CI tests use the explicit lexical test mode.
