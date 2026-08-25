@@ -5,12 +5,13 @@ import time
 import uuid
 from collections import Counter
 
-from fastapi import FastAPI, Query, Request
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+from .auth import require_api_key
 from .data import SCHEMES
 from .eligibility import rank
 from .freshness import stale_schemes
@@ -26,7 +27,7 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 app = FastAPI(
     title="SchemeAI",
-    version="0.4.0",
+    version="0.4.1",
     description="Scholarship and education scheme eligibility assistant with provenance-first RAG",
 )
 app.state.limiter = limiter
@@ -76,18 +77,19 @@ def health():
     return {
         "status": "ok",
         "llm_configured": LLMClient().available(),
+        "api_key_protection": bool(__import__("os").getenv("SCHEMEAI_API_KEY")),
         "scheme_count": len(SCHEMES),
         "stale_scheme_count": len(stale_schemes()),
     }
 
 
 @app.get("/schemes")
-def schemes():
+def schemes(_: None = Depends(require_api_key)):
     return {"count": len(SCHEMES), "schemes": [s.model_dump() for s in SCHEMES]}
 
 
 @app.get("/freshness")
-def freshness():
+def freshness(_: None = Depends(require_api_key)):
     stale = stale_schemes()
     return {"stale": stale, "stale_count": len(stale)}
 
@@ -97,6 +99,7 @@ def freshness():
 def recommend(
     request: Request,
     profile: StudentProfile,
+    _: None = Depends(require_api_key),
     query: str | None = Query(default=None, max_length=1000),
     language: str = Query(default="en", pattern="^(en|kn|hi)$"),
 ):
@@ -115,7 +118,12 @@ def recommend(
 
 @app.get("/search")
 @limiter.limit("30/minute")
-def search(request: Request, q: str = Query(min_length=2, max_length=1000), top_k: int = Query(default=5, ge=1, le=20)):
+def search(
+    request: Request,
+    _: None = Depends(require_api_key),
+    q: str = Query(min_length=2, max_length=1000),
+    top_k: int = Query(default=5, ge=1, le=20),
+):
     safe_query = clean_user_text(q, 1000)
     evidence = retrieve(safe_query, top_k)
     logger.info("retrieval_complete", extra={"retrieval_hits": len(evidence), "top_k": top_k})
@@ -127,6 +135,7 @@ def search(request: Request, q: str = Query(min_length=2, max_length=1000), top_
 def ask(
     request: Request,
     profile: StudentProfile,
+    _: None = Depends(require_api_key),
     question: str = Query(min_length=2, max_length=2000),
     language: str = Query(default="en", pattern="^(en|kn|hi)$"),
 ):
