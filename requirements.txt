@@ -14,3 +14,4 @@ pypdf==6.0.0
 requests==2.32.5
 sentence-transformers==5.1.0
 slowapi==0.1.9
+langdetect==1.0.9
