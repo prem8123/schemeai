@@ -3,10 +3,10 @@ from .models import StudentProfile, RecommendationResponse
 from .data import SCHEMES
 from .eligibility import rank
 from .rag import retrieve
+from .llm import LLMClient
 
-app = FastAPI(title="SchemeAI", version="0.1.0", description="AI-ready scholarship and education scheme eligibility assistant")
-
-DISCLAIMER = "SchemeAI provides informational matching only. Always verify eligibility and application details against the current official scheme authority before applying."
+app = FastAPI(title="SchemeAI", version="0.2.0", description="Scholarship and education scheme eligibility assistant")
+DISCLAIMER = "Informational matching only. Verify current eligibility and application details with the official scheme authority before applying."
 
 @app.get("/")
 def root():
@@ -14,7 +14,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "llm_configured": LLMClient().available(), "scheme_count": len(SCHEMES)}
 
 @app.get("/schemes")
 def schemes():
@@ -28,3 +28,18 @@ def recommend(profile: StudentProfile, query: str | None = None, language: str =
 @app.get("/search")
 def search(q: str, top_k: int = 5):
     return {"query": q, "evidence": [e.__dict__ for e in retrieve(q, top_k)]}
+
+@app.post("/ask")
+def ask(profile: StudentProfile, question: str, language: str = "en"):
+    evidence = retrieve(question, top_k=5)
+    results = rank(profile, SCHEMES)
+    client = LLMClient()
+    answer = client.answer(question, [e.__dict__ for e in evidence])
+    return {
+        "question": question,
+        "language": language,
+        "answer": answer,
+        "recommendations": [r.model_dump() for r in results[:5]],
+        "evidence": [e.__dict__ for e in evidence],
+        "disclaimer": DISCLAIMER,
+    }
