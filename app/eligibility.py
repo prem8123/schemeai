@@ -26,6 +26,8 @@ def _compare(actual: Any, operator: str, expected: Any) -> bool:
 def evaluate(profile: StudentProfile, scheme: Scheme) -> EligibilityResult:
     reasons: list[str] = []
     missing: list[str] = []
+    critical_fail = False
+    advisory_fail = False
     checks = len(scheme.eligibility_rules)
     passed = 0
 
@@ -53,15 +55,21 @@ def evaluate(profile: StudentProfile, scheme: Scheme) -> EligibilityResult:
             passed += 1
             reasons.append(f"{rule.field} satisfies the documented rule.")
         else:
+            if rule.critical:
+                critical_fail = True
+            else:
+                advisory_fail = True
             reasons.append(f"{rule.field} does not satisfy the documented rule.")
 
     score = round(passed / checks, 2) if checks else 0.0
-    if any("does not satisfy" in r for r in reasons):
+    if critical_fail:
         status = "NOT_ELIGIBLE"
     elif missing or scheme.manual_review_required:
         status = "UNKNOWN"
         if scheme.manual_review_required and scheme.manual_review_reason:
             reasons.append(scheme.manual_review_reason)
+    elif advisory_fail:
+        status = "POSSIBLY_ELIGIBLE"
     elif score == 1:
         status = "LIKELY_ELIGIBLE"
     else:
