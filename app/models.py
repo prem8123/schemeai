@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from .schema import FreshnessStatus, Provenance
+from .schema import EligibilityRule, FreshnessStatus, Provenance
 
 
 class StudentProfile(BaseModel):
@@ -46,6 +46,7 @@ class Scheme(BaseModel):
     source_page: Optional[str] = None
     source_text: str
     provenance: List[Provenance] = []
+    eligibility_rules: List[EligibilityRule] = []
     freshness: Optional[FreshnessStatus] = None
     manual_review_required: bool = False
     manual_review_reason: Optional[str] = None
