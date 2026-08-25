@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="SchemeAI scholarship and education scheme eligibility assistant" />
+  <title>SchemeAI — Scholarship Assistant</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="brand"><span class="logo">🎓</span><div><h1>SchemeAI</h1><p>Scholarship & education scheme eligibility assistant</p></div></div>
+      <div class="status" id="status">API not configured</div>
+    </header>
+
+    <section class="card intro">
+      <h2>Find scholarships you may qualify for</h2>
+      <p>Tell SchemeAI about your education profile. It returns ranked matches, reasons, and evidence. Demo records are clearly labeled and are not official eligibility rules.</p>
+    </section>
+
+    <section class="grid">
+      <form class="card" id="profileForm">
+        <div class="section-title"><span>1</span><h2>Your profile</h2></div>
+        <label>API URL<input id="apiUrl" type="url" value="http://127.0.0.1:8000" /></label>
+        <div class="two"><label>Age<input id="age" type="number" min="1" max="100" value="20" required /></label><label>State<input id="state" value="Karnataka" required /></label></div>
+        <div class="two"><label>Education<select id="education"><option>UG</option><option>PG</option><option>DIPLOMA</option></select></label><label>Course<input id="course" value="BTech" /></label></div>
+        <div class="two"><label>Category<select id="category"><option value="">Prefer not to say</option><option>GENERAL</option><option>SC</option><option>ST</option><option>OBC</option></select></label><label>Language<select id="language"><option value="en">English</option><option value="kn">ಕನ್ನಡ</option><option value="hi">हिन्दी</option></select></label></div>
+        <label>Annual family income (₹)<input id="income" type="number" min="0" value="250000" /></label>
+        <label class="check"><input id="disability" type="checkbox" /> Person with disability</label>
+        <label>What are you looking for?<textarea id="query">Which scholarships may I be eligible for?</textarea></label>
+        <button type="submit">Find scholarships</button>
+        <p class="error" id="error"></p>
+      </form>
+
+      <section class="card results-panel">
+        <div class="section-title"><span>2</span><h2>Recommendations</h2></div>
+        <div id="results" class="results"><div class="empty">Submit your profile to see recommendations.</div></div>
+      </section>
+    </section>
+
+    <footer>SchemeAI is an informational matching tool. Always verify current eligibility and application details with the official scheme authority.</footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
