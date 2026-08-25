@@ -27,6 +27,14 @@ class EligibilityClause(BaseModel):
     value: Any | None = None
 
 
+class EligibilityRule(BaseModel):
+    clause_id: str
+    field: str
+    operator: Literal["==", "!=", "<", "<=", ">", ">=", "in"]
+    value: Any
+    provenance: Provenance
+
+
 class SchemeRecord(BaseModel):
     id: str = Field(min_length=2)
     name: str = Field(min_length=2)
