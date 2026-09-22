@@ -4,6 +4,8 @@ from typing import Any
 
 from .models import EligibilityResult, Scheme, StudentProfile
 
+SUPPORTED_STATUSES = ("LIKELY_ELIGIBLE", "POSSIBLY_ELIGIBLE", "UNKNOWN", "NOT_ELIGIBLE")
+
 
 def _compare(actual: Any, operator: str, expected: Any) -> bool:
     if operator == "==":
@@ -24,12 +26,18 @@ def _compare(actual: Any, operator: str, expected: Any) -> bool:
 
 
 def evaluate(profile: StudentProfile, scheme: Scheme) -> EligibilityResult:
+    """Evaluate only machine-checkable rules.
+
+    Missing inputs are never treated as passes. A critical failed rule means
+    NOT_ELIGIBLE; missing inputs or manual review requirements mean UNKNOWN.
+    The score is an evidence-completeness indicator, not a probability.
+    """
     reasons: list[str] = []
     missing: list[str] = []
     critical_fail = False
     advisory_fail = False
-    checks = len(scheme.eligibility_rules)
     passed = 0
+    checks = len(scheme.eligibility_rules)
 
     if not scheme.eligibility_rules:
         return EligibilityResult(
@@ -44,24 +52,33 @@ def evaluate(profile: StudentProfile, scheme: Scheme) -> EligibilityResult:
         actual = getattr(profile, rule.field, None)
         if actual is None:
             missing.append(rule.field)
-            reasons.append(f"Need {rule.field} to evaluate: {rule.provenance.reference}.")
+            reasons.append(
+                f"Missing {rule.field}; this condition cannot be evaluated from the supplied profile "
+                f"(source: {rule.provenance.reference})."
+            )
             continue
         try:
             ok = _compare(actual, rule.operator, rule.value)
         except (TypeError, ValueError):
-            ok = False
-            reasons.append(f"Could not safely evaluate {rule.field}; human review is required.")
+            reasons.append(
+                f"Could not safely evaluate {rule.field}; human review is required "
+                f"(source: {rule.provenance.reference})."
+            )
+            missing.append(rule.field)
+            continue
+
         if ok:
             passed += 1
             reasons.append(f"{rule.field} satisfies the documented rule.")
+        elif rule.critical:
+            critical_fail = True
+            reasons.append(f"{rule.field} does not satisfy a required documented rule.")
         else:
-            if rule.critical:
-                critical_fail = True
-            else:
-                advisory_fail = True
-            reasons.append(f"{rule.field} does not satisfy the documented rule.")
+            advisory_fail = True
+            reasons.append(f"{rule.field} does not satisfy an advisory documented rule.")
 
     score = round(passed / checks, 2) if checks else 0.0
+
     if critical_fail:
         status = "NOT_ELIGIBLE"
     elif missing or scheme.manual_review_required:
@@ -70,10 +87,8 @@ def evaluate(profile: StudentProfile, scheme: Scheme) -> EligibilityResult:
             reasons.append(scheme.manual_review_reason)
     elif advisory_fail:
         status = "POSSIBLY_ELIGIBLE"
-    elif score == 1:
-        status = "LIKELY_ELIGIBLE"
     else:
-        status = "POSSIBLY_ELIGIBLE"
+        status = "LIKELY_ELIGIBLE"
 
     return EligibilityResult(
         scheme=scheme,
