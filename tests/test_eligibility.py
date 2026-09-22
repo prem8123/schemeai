@@ -1,40 +1,22 @@
-from app.data import DEMO_SCHEMES
+from datetime import date
 from app.eligibility import evaluate
-from app.models import StudentProfile
+from app.models import Scheme, StudentProfile
+from app.schema import EligibilityRule, Provenance
 
-
-def test_demo_income_match():
-    p = StudentProfile(age=20, state="Karnataka", education_level="UG", annual_family_income=200000)
-    result = evaluate(p, DEMO_SCHEMES[0])
-    assert result.status == "LIKELY_ELIGIBLE"
-
-
-def test_demo_income_failure():
-    p = StudentProfile(age=20, state="Karnataka", education_level="UG", annual_family_income=900000)
-    result = evaluate(p, DEMO_SCHEMES[0])
-    assert result.status == "NOT_ELIGIBLE"
-
-
-def test_demo_missing_income_is_unknown():
-    p = StudentProfile(age=20, state="Karnataka", education_level="UG")
-    result = evaluate(p, DEMO_SCHEMES[0])
-    assert result.status == "UNKNOWN"
-
-
-def test_official_scheme_is_conservative():
-    from app.data import SCHEMES
-
-    p = StudentProfile(
-        age=20,
-        state="Karnataka",
-        education_level="UG",
-        annual_family_income=200000,
-        class12_percentile=90,
-        regular_course=True,
-        is_diploma=False,
-        gap_after_class12=False,
-        receives_other_scholarship=False,
-    )
-    result = evaluate(p, SCHEMES[0])
-    assert result.status == "UNKNOWN"
-    assert result.scheme.manual_review_required is True
+def p():
+    return Provenance(authority="Test Authority",official_url="https://example.gov/test",last_verified=date.today(),document_title="Test document",reference="Section 1",source_type="html")
+def s(manual=False):
+    x=p()
+    return Scheme(id="test",name="Test Scheme",authority="Test Authority",description="Test",benefit="Test benefit",source="https://example.gov/test",source_text="Test",provenance=[x],eligibility_rules=[
+        EligibilityRule(clause_id="income",field="annual_family_income",operator="<=",value=450000,provenance=x,critical=True),
+        EligibilityRule(clause_id="regular",field="regular_course",operator="==",value=True,provenance=x,critical=True)],manual_review_required=manual,manual_review_reason="Manual verification required" if manual else None)
+def profile(**kwargs):
+    base={"age":20,"state":"Karnataka","education_level":"UG"}; base.update(kwargs); return StudentProfile(**base)
+def test_missing_input_is_unknown_not_pass():
+    r=evaluate(profile(annual_family_income=200000),s()); assert r.status=="UNKNOWN"; assert "regular_course" in r.missing_information
+def test_critical_failure_is_not_eligible():
+    assert evaluate(profile(annual_family_income=900000,regular_course=True),s()).status=="NOT_ELIGIBLE"
+def test_all_known_rules_pass_is_likely_eligible():
+    assert evaluate(profile(annual_family_income=200000,regular_course=True),s()).status=="LIKELY_ELIGIBLE"
+def test_manual_review_blocks_likely_eligible():
+    assert evaluate(profile(annual_family_income=200000,regular_course=True),s(manual=True)).status=="UNKNOWN"
