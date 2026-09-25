@@ -13,6 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from .auth import require_api_key
+from .agents import SchemeAIOrchestrator
 from .data import SCHEMES
 from .eligibility import rank
 from .freshness import stale_schemes
@@ -147,14 +148,15 @@ def ask(
     detected_language = detect_supported_language(safe_question, fallback=language)
     evidence = retrieve(safe_question, top_k=5)
     results = rank(profile, SCHEMES)
-    client = LLMClient()
-    answer = client.answer(safe_question, [e.model_dump() for e in evidence], language=detected_language)
-    logger.info("retrieval_complete", extra={"retrieval_hits": len(evidence), "top_k": 5})
+    orchestration = SchemeAIOrchestrator().investigate(profile, safe_question, language=detected_language)
+    logger.info("orchestration_complete", extra={"plan": orchestration["plan"]})
     return {
         "question": safe_question,
         "language": detected_language,
-        "answer": answer,
-        "recommendations": [r.model_dump() for r in results[:5]],
-        "evidence": [e.model_dump() for e in evidence],
+        "plan": orchestration["plan"],
+        "steps": orchestration["steps"],
+        "answer": orchestration["answer"],
+        "recommendations": [r.model_dump() for r in orchestration["recommendations"][:5]],
+        "evidence": [e.model_dump() for e in orchestration["evidence"]],
         "disclaimer": DISCLAIMER,
     }
